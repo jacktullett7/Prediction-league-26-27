@@ -185,4 +185,133 @@ export default function App() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
             {data.wildcards.map((w) => (
-              
+              <div key={w.id} style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{w.name}</div>
+                <div style={{ fontSize: 13.5, color: "#4a4a42", lineHeight: 1.5 }}>{w.description}</div>
+                <div className="mono" style={{ fontSize: 12, color: "var(--amber)", marginTop: 8 }}>{w.total}× per player</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* WILDCARD TRACKER */}
+        <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, overflow: "auto" }} className="fade-in">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
+            <Users size={16} color="var(--amber)" />
+            <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Wildcards remaining</h2>
+          </div>
+          <div style={{ padding: 18 }}>
+            <select style={{ maxWidth: 280, width: "100%" }} value={openWildcard || ""} onChange={(e) => setOpenWildcard(e.target.value || null)}>
+              <option value="">Select a player…</option>
+              {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {openWildcard && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openWildcard)}'s wildcards remaining</div>
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {data.wildcards.map((w) => {
+                    const remaining = data.wildcardRemaining[openWildcard]?.[w.id] ?? 0;
+                    return (
+                      <li key={w.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, maxWidth: 360 }}>
+                        <span style={{ color: "#6b6a5e" }}>{w.name}</span>
+                        <span className="mono" style={{ fontWeight: 700, color: remaining === 0 ? "#b0aea1" : "var(--amber)" }}>
+                          {remaining}<span style={{ color: "#b0aea1", fontWeight: 500 }}>/{w.total}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* GOALSCORER PICKS */}
+        <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Target size={16} color="var(--amber)" />
+            <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Goalscorer picks</h2>
+          </div>
+          <select style={{ maxWidth: 280, width: "100%" }} value={openScorer || ""} onChange={(e) => setOpenScorer(e.target.value || null)}>
+            <option value="">Select a player…</option>
+            {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {openScorer && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openScorer)}'s goalscorer picks</div>
+              {(data.goalscorerPicks[openScorer] || []).length ? (
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[...(data.goalscorerPicks[openScorer] || [])].sort((a, b) => a.localeCompare(b)).map((name, idx) => (
+                    <li key={idx} style={{ fontSize: 14, fontWeight: 600, color: "var(--amber)" }}>{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <span style={{ color: "#b0aea1", fontSize: 13 }}>No picks yet</span>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* YELLOW CARD PICKS */}
+        <section style={{ margin: "20px 0 8px", background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Square size={14} color="var(--card)" fill="var(--card)" />
+            <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Yellow card picks</h2>
+          </div>
+          <select style={{ maxWidth: 280, width: "100%" }} value={openCard || ""} onChange={(e) => setOpenCard(e.target.value || null)}>
+            <option value="">Select a player…</option>
+            {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {openCard && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openCard)}'s yellow card picks</div>
+              {(data.yellowCardPicks[openCard] || []).length ? (
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[...(data.yellowCardPicks[openCard] || [])].sort((a, b) => a.localeCompare(b)).map((name, idx) => (
+                    <li key={idx} style={{ fontSize: 14, fontWeight: 600, color: "#8A6D00" }}>{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <span style={{ color: "#b0aea1", fontSize: 13 }}>No picks yet</span>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* PRE-SEASON BONUS PREDICTIONS */}
+        <section style={{ margin: "20px 0 8px", background: "#fff", border: "1px solid var(--line)", borderRadius: 10, overflow: "auto" }} className="fade-in">
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Trophy size={16} color="var(--amber)" />
+              <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Pre-season bonus predictions</h2>
+            </div>
+            <div style={{ fontSize: 12.5, color: "#6b6a5e", marginTop: 4 }}>10 points per correct prediction, added once each competition ends — 50 points max.</div>
+          </div>
+          <div style={{ padding: 18 }}>
+            <select style={{ maxWidth: 280, width: "100%" }} value={openBonus || ""} onChange={(e) => setOpenBonus(e.target.value || null)}>
+              <option value="">Select a player…</option>
+              {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {openBonus && (() => {
+              const pred = data.preSeasonPredictions[openBonus] || { pl: "", champ: "", faCup: "", leagueCup: "", ucl: "" };
+              const fields = [["pl", "Premier League"], ["champ", "Championship"], ["faCup", "FA Cup"], ["leagueCup", "League Cup"], ["ucl", "Champions League"]];
+              return (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openBonus)}'s bonus predictions</div>
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                    {fields.map(([key, label]) => (
+                      <li key={key} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, maxWidth: 360 }}>
+                        <span style={{ color: "#6b6a5e" }}>{label}</span>
+                        <span style={{ fontWeight: 700, color: pred[key] ? "var(--amber)" : "#b0aea1" }}>{pred[key] || "—"}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
