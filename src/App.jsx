@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, Calendar, Zap, Target, Square, Users } from "lucide-react";
+import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare } from "lucide-react";
 import data from "./data.js";
 
 function fmtDate(d) {
@@ -92,6 +92,24 @@ export default function App() {
       </header>
 
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px" }}>
+
+        {/* PREDICTIONS OF THE WEEK */}
+        {data.predictionsOfWeek && data.predictionsOfWeek.length > 0 && (
+          <section style={{ marginTop: 28, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 18px" }} className="fade-in">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <MessageSquare size={15} color="var(--amber)" />
+              <h2 className="disp" style={{ fontSize: 14, margin: 0 }}>Predictions of the week</h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {data.predictionsOfWeek.map((p) => (
+                <div key={p.id} className="row-line" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 600, fontSize: 13.5 }}>{playerName(p.playerId)}</span>
+                  <span className="mono" style={{ fontSize: 13.5, color: "var(--amber)", fontWeight: 700 }}>{p.prediction}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* TABLE + TOP SCORER */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 28 }} className="fade-in">
