@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare } from "lucide-react";
+import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
 import data from "./data.js";
 
 function fmtDate(d) {
@@ -27,10 +27,20 @@ export default function App() {
   const [openCard, setOpenCard] = useState(null);
   const [openBonus, setOpenBonus] = useState(null);
   const [openWildcard, setOpenWildcard] = useState(null);
+  const [openGraph, setOpenGraph] = useState(null);
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
   const playerName = (id) => data.players.find((p) => p.id === id)?.name || "—";
+  const totalPlayers = data.players.length;
+
+  const getPositionSeries = (playerId) => {
+    if (!data.positionHistory) return [];
+    return data.positionHistory.map((wk) => {
+      const idx = wk.order.indexOf(playerId);
+      return { week: wk.week, position: idx === -1 ? null : idx + 1 };
+    }).filter((p) => p.position !== null);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--chalk)", fontFamily: "Inter, sans-serif", color: "var(--ink)", paddingBottom: 64 }}>
@@ -93,6 +103,17 @@ export default function App() {
 
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px" }}>
 
+        {/* CUP TEASER */}
+        {data.cupTeaser && (
+          <div style={{
+            marginTop: 20, background: "linear-gradient(90deg, var(--amber), #C9971F)", borderRadius: 10,
+            padding: "12px 18px", display: "flex", alignItems: "center", gap: 10, color: "#1B1E24"
+          }} className="fade-in">
+            <Sparkles size={16} />
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{data.cupTeaser}</span>
+          </div>
+        )}
+
         {/* PREDICTIONS OF THE WEEK */}
         {data.predictionsOfWeek && data.predictionsOfWeek.length > 0 && (
           <section style={{ marginTop: 28, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "14px 18px" }} className="fade-in">
@@ -103,7 +124,7 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column" }}>
               {data.predictionsOfWeek.map((p) => (
                 <div key={p.id} className="row-line" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 600, fontSize: 13.5 }}>{playerName(p.playerId)}</span>
+                  <span style={{ fontWeight: 600, fontSize: 13.5 }}>{p.label || playerName(p.playerId)}</span>
                   <span className="mono" style={{ fontSize: 13.5, color: "var(--amber)", fontWeight: 700 }}>{p.prediction}</span>
                 </div>
               ))}
@@ -157,6 +178,65 @@ export default function App() {
           </section>
         </div>
 
+        {/* POSITION TRACKER */}
+        {data.positionHistory && data.positionHistory.length > 0 && (
+          <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <TrendingUp size={16} color="var(--amber)" />
+              <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Position tracker</h2>
+            </div>
+            <select style={{ maxWidth: 280, width: "100%" }} value={openGraph || ""} onChange={(e) => setOpenGraph(e.target.value || null)}>
+              <option value="">Select a player…</option>
+              {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {openGraph && (() => {
+              const series = getPositionSeries(openGraph);
+              if (!series.length) return (
+                <div style={{ marginTop: 14, fontSize: 13, color: "#b0aea1" }}>No position history yet</div>
+              );
+              const W = 680, H = 260, padL = 34, padR = 16, padT = 16, padB = 34;
+              const plotW = W - padL - padR, plotH = H - padT - padB;
+              const minWeek = series[0].week, maxWeek = series[series.length - 1].week;
+              const weekSpan = Math.max(1, maxWeek - minWeek);
+              const x = (wk) => padL + ((wk - minWeek) / weekSpan) * plotW;
+              const y = (pos) => padT + ((pos - 1) / (totalPlayers - 1)) * plotH;
+              const points = series.map((p) => `${x(p.week)},${y(p.position)}`).join(" ");
+              const current = series[series.length - 1];
+              const best = series.reduce((a, b) => (b.position < a.position ? b : a), series[0]);
+              return (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openGraph)}'s position by gameweek</div>
+                  <div style={{ display: "flex", gap: 18, marginBottom: 10, flexWrap: "wrap" }}>
+                    <div>
+                      <span style={{ fontSize: 12, color: "#8a897c" }}>Current: </span>
+                      <span className="mono" style={{ fontWeight: 700, color: "var(--amber)" }}>{current.position}{current.position === 1 ? "st" : current.position === 2 ? "nd" : current.position === 3 ? "rd" : "th"}</span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 12, color: "#8a897c" }}>Best: </span>
+                      <span className="mono" style={{ fontWeight: 700 }}>{best.position}{best.position === 1 ? "st" : best.position === 2 ? "nd" : best.position === 3 ? "rd" : "th"} <span style={{ color: "#b0aea1", fontWeight: 500 }}>(GW{best.week})</span></span>
+                    </div>
+                  </div>
+                  <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                    {[1, Math.round(totalPlayers / 2), totalPlayers].map((pos) => (
+                      <g key={pos}>
+                        <line x1={padL} x2={W - padR} y1={y(pos)} y2={y(pos)} stroke="var(--line)" strokeWidth="1" />
+                        <text x={padL - 8} y={y(pos)} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#8a897c" fontFamily="Roboto Mono, monospace">{pos}</text>
+                      </g>
+                    ))}
+                    {series.map((p) => (
+                      <text key={p.week} x={x(p.week)} y={H - 10} textAnchor="middle" fontSize="11" fill="#8a897c" fontFamily="Roboto Mono, monospace">GW{p.week}</text>
+                    ))}
+                    <polyline points={points} fill="none" stroke="var(--navy)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                    {series.map((p) => (
+                      <circle key={p.week} cx={x(p.week)} cy={y(p.position)} r="5" fill={p.week === current.week ? "var(--amber)" : "var(--navy)"} stroke="#fff" strokeWidth="1.5" />
+                    ))}
+                  </svg>
+                </div>
+              );
+            })()}
+          </section>
+        )}
+
         {/* THIS WEEK'S PREDICTIONS */}
         <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -164,6 +244,11 @@ export default function App() {
             <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>This week's predictions</h2>
           </div>
           <div style={{ fontSize: 12.5, color: "#6b6a5e", marginBottom: 12 }}>Gameweek {data.gameweek.number} fixtures</div>
+          {data.fixtures.every((f) => !f.home && !f.away) ? (
+            <div style={{ textAlign: "center", fontSize: 13.5, color: "#b0aea1", fontStyle: "italic", padding: "10px 4px" }}>
+              {data.gameweek.fixturesReleaseNote || "Released soon"}
+            </div>
+          ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {data.fixtures.map((f) => (
               <div key={f.id} className="row-line" style={{ padding: "10px 4px" }}>
@@ -174,11 +259,12 @@ export default function App() {
                     <span>{f.away || "TBC"}</span>
                   </div>
                 ) : (
-                  <div style={{ textAlign: "center", fontSize: 13.5, color: "#b0aea1", fontStyle: "italic" }}>Released soon</div>
+                  <div style={{ textAlign: "center", fontSize: 13.5, color: "#b0aea1", fontStyle: "italic" }}>{data.gameweek.fixturesReleaseNote || "Released soon"}</div>
                 )}
               </div>
             ))}
           </div>
+          )}
         </section>
 
         {/* CUPS */}
