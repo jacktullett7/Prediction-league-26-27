@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
+import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare, Sparkles, TrendingUp, Swords, Crown, ChevronDown } from "lucide-react";
 import data from "./data.js";
 
 function fmtDate(d) {
@@ -28,6 +28,7 @@ export default function App() {
   const [openBonus, setOpenBonus] = useState(null);
   const [openWildcard, setOpenWildcard] = useState(null);
   const [openGraph, setOpenGraph] = useState(null);
+  const [cupDrawOpen, setCupDrawOpen] = useState(false);
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
@@ -112,6 +113,64 @@ export default function App() {
             <Sparkles size={16} />
             <span style={{ fontWeight: 700, fontSize: 13.5 }}>{data.cupTeaser}</span>
           </div>
+        )}
+
+        {/* CUP DRAW */}
+        {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.length > 0 && (
+          <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--amber)", borderRadius: 10, overflow: "hidden" }} className="fade-in">
+            <button
+              onClick={() => setCupDrawOpen((v) => !v)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                padding: "16px 18px", background: "linear-gradient(90deg, rgba(217,123,43,0.10), rgba(217,123,43,0.02))",
+                border: "none", cursor: "pointer", textAlign: "left", font: "inherit"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Swords size={16} color="var(--amber)" />
+                <h2 className="disp" style={{ fontSize: 15, margin: 0, color: "var(--ink)" }}>Prediction League Cup — {data.cupDraw.round}</h2>
+                {!cupDrawOpen && (
+                  <span className="mono" style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber)", background: "rgba(217,123,43,0.14)", borderRadius: 999, padding: "3px 9px" }}>
+                    Tap to see the draw
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                {data.cupDraw.playBy && (
+                  <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700, whiteSpace: "nowrap" }}>By {data.cupDraw.playBy}</span>
+                )}
+                <ChevronDown size={18} color="var(--amber)" style={{ transform: cupDrawOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
+              </div>
+            </button>
+            {cupDrawOpen && (
+              <div style={{ padding: "4px 18px 18px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 12 }}>
+                  {data.cupDraw.ties.map((t) => (
+                    <div key={t.id} style={{
+                      border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
+                      background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
+                      borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{playerName(t.homeId)}</span>
+                        {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                      </div>
+                      <span className="mono" style={{ fontSize: 12, color: "#b0aea1", flexShrink: 0 }}>v</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+                        {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{playerName(t.awayId)}</span>
+                      </div>
+                      {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>
+                  <Crown size={11} color="var(--amber)" style={{ verticalAlign: -1, marginRight: 4 }} />
+                  denotes current holder
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
         {/* PREDICTIONS OF THE WEEK */}
@@ -277,7 +336,7 @@ export default function App() {
             {data.cups.map((c) => (
               <div key={c.id} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", minWidth: 200 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
-                <div className="mono" style={{ fontSize: 13, color: "var(--amber)" }}>{fmtDate(c.date)}</div>
+                <div className="mono" style={{ fontSize: 13, color: "var(--amber)" }}>{c.status || fmtDate(c.date)}</div>
               </div>
             ))}
           </div>

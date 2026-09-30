@@ -5,7 +5,25 @@
 const data = {
   leagueName: "Prediction League 26/27",
   gameweek: { number: 6, deadline: "2026-10-09T23:59", fixturesReleaseNote: "Gameweek 6 returning after the international break" },
-  cupTeaser: "Prediction League Cup — draw coming soon",
+  cupTeaser: null,
+  cupDraw: {
+    round: "Round of 24",
+    playBy: "13/14 October 2026",
+    ties: [
+      { id: "t1", homeId: "p17", awayId: "p10" },
+      { id: "t2", homeId: "p11", awayId: "p7" },
+      { id: "t3", homeId: "p24", awayId: "p9" },
+      { id: "t4", homeId: "p13", awayId: "p1", spicy: true },
+      { id: "t5", homeId: "p18", awayId: "p21" },
+      { id: "t6", homeId: "p6", awayId: "p16" },
+      { id: "t7", homeId: "p22", awayId: "p15" },
+      { id: "t8", homeId: "p4", awayId: "p20" },
+      { id: "t9", homeId: "p12", awayId: "p14", holder: "home" },
+      { id: "t10", homeId: "p2", awayId: "p3" },
+      { id: "t11", homeId: "p8", awayId: "p5" },
+      { id: "t12", homeId: "p19", awayId: "p23" },
+    ],
+  },
   predictionsOfWeek: [
     { id: "pw1", playerId: "p13", prediction: "Wrexham 2-1 Southampton" },
     { id: "pw2", playerId: "p1", label: "Alfie CW", prediction: "Birmingham 2-2 Middlesbrough" },
@@ -58,7 +76,7 @@ const data = {
     { week: 5, order: ["p20","p13","p4","p7","p5","p3","p16","p17","p10","p24","p2","p11","p1","p15","p8","p9","p22","p23","p12","p18","p21","p6","p19","p14"] },
   ],
   cups: [
-    { id: "c1", name: "Prediction League Cup", date: "2026-10-01" },
+    { id: "c1", name: "Prediction League Cup", status: "In progress" },
     { id: "c2", name: "Last Man Standing", date: "2027-02-01" },
   ],
   wildcards: [
