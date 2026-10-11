@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare, Sparkles, TrendingUp, Swords, Crown, ChevronDown } from "lucide-react";
+import { Trophy, Calendar, Zap, Target, Square, Users, MessageSquare, Sparkles, TrendingUp, Swords, Crown } from "lucide-react";
 import data from "./data.js";
 
 function fmtDate(d) {
@@ -28,12 +28,13 @@ export default function App() {
   const [openBonus, setOpenBonus] = useState(null);
   const [openWildcard, setOpenWildcard] = useState(null);
   const [openGraph, setOpenGraph] = useState(null);
-  const [cupDrawOpen, setCupDrawOpen] = useState(false);
+  const [tab, setTab] = useState("league");
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
   const playerName = (id) => data.players.find((p) => p.id === id)?.name || "—";
   const totalPlayers = data.players.length;
+  const heroDeadline = tab === "cup" ? data.cupDraw?.deadline : data.gameweek.deadline;
 
   const getPositionSeries = (playerId) => {
     if (!data.positionHistory) return [];
@@ -82,28 +83,136 @@ export default function App() {
             background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "22px 24px"
           }}>
             <div>
-              <div className="eyebrow" style={{ color: "#C7CEDA" }}>Gameweek</div>
+              <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? "Round" : "Gameweek"}</div>
               <div className="mono" style={{ fontSize: 56, fontWeight: 700, color: "var(--card)", lineHeight: 1 }}>
-                {String(data.gameweek.number).padStart(2, "0")}
+                {tab === "cup" ? (data.cupDraw?.roundShort || "RO24") : String(data.gameweek.number).padStart(2, "0")}
               </div>
             </div>
             <div style={{ borderLeft: "1px solid rgba(255,255,255,0.15)", paddingLeft: 24 }}>
-              <div className="eyebrow" style={{ color: "#C7CEDA" }}>Picks deadline</div>
-              <div className="mono" style={{ fontSize: 20, fontWeight: 700 }}>{data.gameweek.deadline ? fmtDeadline(data.gameweek.deadline) : "TBC"}</div>
-              {data.gameweek.deadline && daysUntil(data.gameweek.deadline) !== null && (
+              <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? "Prediction deadline" : "Picks deadline"}</div>
+              <div className="mono" style={{ fontSize: 20, fontWeight: 700 }}>{heroDeadline ? fmtDeadline(heroDeadline) : "TBC"}</div>
+              {heroDeadline && daysUntil(heroDeadline) !== null && (
                 <div style={{ fontSize: 13, color: "#C7CEDA", marginTop: 2 }}>
-                  {daysUntil(data.gameweek.deadline) > 0
-                    ? `${daysUntil(data.gameweek.deadline)} day${daysUntil(data.gameweek.deadline) === 1 ? "" : "s"} to go`
-                    : daysUntil(data.gameweek.deadline) === 0 ? "Today" : "Deadline passed"}
+                  {daysUntil(heroDeadline) > 0
+                    ? `${daysUntil(heroDeadline)} day${daysUntil(heroDeadline) === 1 ? "" : "s"} to go`
+                    : daysUntil(heroDeadline) === 0 ? "Today" : "Deadline passed"}
                 </div>
               )}
             </div>
           </div>
         </div>
+      
+
+        {/* TABS */}
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px", display: "flex", gap: 8 }}>
+          {[["league", "League", Trophy], ["cup", "Cup", Swords]].map(([key, label, Icon]) => {
+            const active = tab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  padding: "13px 10px", border: "none", cursor: "pointer", font: "inherit",
+                  borderRadius: "10px 10px 0 0",
+                  background: active ? "var(--chalk)" : key === "cup" ? "var(--amber)" : "rgba(255,255,255,0.12)",
+                  color: active ? "var(--navy)" : key === "cup" ? "#1B1E24" : "#F6F4EC",
+                  fontWeight: 700, fontSize: 13.5, letterSpacing: "0.02em"
+                }}
+              >
+                <Icon size={15} />
+                <span className="disp" style={{ fontSize: 13.5 }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px" }}>
 
+
+        {/* CUP TAB */}
+        {tab === "cup" && (
+          <div>
+            {data.cupDraw && data.cupDraw.fixtures && data.cupDraw.fixtures.length > 0 && (
+              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <Calendar size={16} color="var(--amber)" />
+                  <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupDraw.roundShort || "Cup"} predictions</h2>
+                </div>
+                <div style={{ fontSize: 12.5, color: "#6b6a5e", marginBottom: 12 }}>Cup fixtures to predict</div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {data.cupDraw.fixtures.map((f) => (
+                    <div key={f.id} className="row-line" style={{ padding: "10px 4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 14, fontWeight: 600, textAlign: "center", flexWrap: "wrap" }}>
+                        <span>{f.home || "TBC"}</span>
+                        <span className="mono" style={{ color: "#b0aea1" }}>–</span>
+                        <span>{f.away || "TBC"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.length > 0 && (
+              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Swords size={16} color="var(--amber)" />
+                    <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupDraw.round} draw</h2>
+                  </div>
+                  {data.cupDraw.playBy && (
+                    <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>Ties played by {data.cupDraw.playBy}</span>
+                  )}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
+                  {data.cupDraw.ties.map((t) => (
+                    <div key={t.id} style={{
+                      border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
+                      background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
+                      borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0 }}>
+                        <span style={{ lineHeight: 1.25 }}>{playerName(t.homeId)}</span>
+                        {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                      </div>
+                      <span className="mono" style={{ fontSize: 12, color: t.result ? "var(--ink)" : "#b0aea1", fontWeight: t.result ? 700 : 400, flexShrink: 0 }}>{t.result || "v"}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+                        {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                        <span style={{ textAlign: "right", lineHeight: 1.25 }}>{playerName(t.awayId)}</span>
+                      </div>
+                      {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>
+                  <Crown size={11} color="var(--amber)" style={{ verticalAlign: -1, marginRight: 4 }} />
+                  denotes current holder
+                </div>
+              </section>
+            )}
+        {/* CUPS */}
+        <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Calendar size={16} color="var(--amber)" />
+            <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Cup dates</h2>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {data.cups.map((c) => (
+              <div key={c.id} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", minWidth: 200 }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
+                <div className="mono" style={{ fontSize: 13, color: "var(--amber)" }}>{c.status || fmtDate(c.date)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+          </div>
+        )}
+
+        {tab === "league" && (
+          <div>
         {/* CUP TEASER */}
         {data.cupTeaser && (
           <div style={{
@@ -115,63 +224,6 @@ export default function App() {
           </div>
         )}
 
-        {/* CUP DRAW */}
-        {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.length > 0 && (
-          <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--amber)", borderRadius: 10, overflow: "hidden" }} className="fade-in">
-            <button
-              onClick={() => setCupDrawOpen((v) => !v)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                padding: "16px 18px", background: "linear-gradient(90deg, rgba(217,123,43,0.10), rgba(217,123,43,0.02))",
-                border: "none", cursor: "pointer", textAlign: "left", font: "inherit"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <Swords size={16} color="var(--amber)" />
-                <h2 className="disp" style={{ fontSize: 15, margin: 0, color: "var(--ink)" }}>Prediction League Cup — {data.cupDraw.round}</h2>
-                {!cupDrawOpen && (
-                  <span className="mono" style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber)", background: "rgba(217,123,43,0.14)", borderRadius: 999, padding: "3px 9px" }}>
-                    Tap to see the draw
-                  </span>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                {data.cupDraw.playBy && (
-                  <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700, whiteSpace: "nowrap" }}>By {data.cupDraw.playBy}</span>
-                )}
-                <ChevronDown size={18} color="var(--amber)" style={{ transform: cupDrawOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
-              </div>
-            </button>
-            {cupDrawOpen && (
-              <div style={{ padding: "4px 18px 18px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 12 }}>
-                  {data.cupDraw.ties.map((t) => (
-                    <div key={t.id} style={{
-                      border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
-                      background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
-                      borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0 }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{playerName(t.homeId)}</span>
-                        {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
-                      </div>
-                      <span className="mono" style={{ fontSize: 12, color: "#b0aea1", flexShrink: 0 }}>v</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-                        {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>{playerName(t.awayId)}</span>
-                      </div>
-                      {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>
-                  <Crown size={11} color="var(--amber)" style={{ verticalAlign: -1, marginRight: 4 }} />
-                  denotes current holder
-                </div>
-              </div>
-            )}
-          </section>
-        )}
 
         {/* PREDICTIONS OF THE WEEK */}
         {data.predictionsOfWeek && data.predictionsOfWeek.length > 0 && (
@@ -326,21 +378,6 @@ export default function App() {
           )}
         </section>
 
-        {/* CUPS */}
-        <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <Calendar size={16} color="var(--amber)" />
-            <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Cup dates</h2>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {data.cups.map((c) => (
-              <div key={c.id} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px", minWidth: 200 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
-                <div className="mono" style={{ fontSize: 13, color: "var(--amber)" }}>{c.status || fmtDate(c.date)}</div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* WILDCARDS EXPLAINER */}
         <section style={{ marginTop: 20 }} className="fade-in">
@@ -476,6 +513,8 @@ export default function App() {
             })()}
           </div>
         </section>
+          </div>
+        )}
       </main>
     </div>
   );

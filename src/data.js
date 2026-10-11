@@ -8,6 +8,16 @@ const data = {
   cupTeaser: null,
   cupDraw: {
     round: "Round of 24",
+    roundShort: "RO24",
+    deadline: "2026-10-13T17:00",
+    fixtures: [
+      { id: "cf1", home: "Atletico Madrid", away: "Manchester United" },
+      { id: "cf2", home: "Villarreal", away: "Napoli" },
+      { id: "cf3", home: "Lens", away: "Sporting Lisbon" },
+      { id: "cf4", home: "Aston Villa", away: "Fenerbahçe" },
+      { id: "cf5", home: "Manchester City", away: "PSG" },
+      { id: "cf6", home: "Real Betis", away: "FC Porto" },
+    ],
     playBy: "13/14 October 2026",
     ties: [
       { id: "t1", homeId: "p17", awayId: "p10" },
