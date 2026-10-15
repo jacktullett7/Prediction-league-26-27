@@ -16,6 +16,11 @@ function fmtDeadline(d) {
   return date.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+function parseScore(r) {
+  const m = /^\s*(\d+)\s*[-–]\s*(\d+)\s*$/.exec(r || "");
+  return m ? [Number(m[1]), Number(m[2])] : null;
+}
+
 function daysUntil(d) {
   const date = new Date(d);
   if (isNaN(date)) return null;
@@ -34,6 +39,7 @@ export default function App() {
   const standings = [...data.players].sort((a, b) => b.points - a.points);
   const playerName = (id) => data.players.find((p) => p.id === id)?.name || "—";
   const totalPlayers = data.players.length;
+  const heroValue = tab === "cup" ? (data.cupDraw?.heroValue || data.cupDraw?.roundShort || "RO24") : String(data.gameweek.number).padStart(2, "0");
   const heroDeadline = tab === "cup" ? data.cupDraw?.deadline : data.gameweek.deadline;
 
   const getPositionSeries = (playerId) => {
@@ -79,18 +85,18 @@ export default function App() {
         {/* SCOREBOARD HERO */}
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 28px" }}>
           <div style={{
-            display: "grid", gridTemplateColumns: "auto 1fr", gap: 24, alignItems: "center",
+            display: "grid", gridTemplateColumns: "auto 1fr", gap: 18, alignItems: "center",
             background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "22px 24px"
           }}>
             <div>
-              <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? "Round" : "Gameweek"}</div>
-              <div className="mono" style={{ fontSize: 56, fontWeight: 700, color: "var(--card)", lineHeight: 1 }}>
-                {tab === "cup" ? (data.cupDraw?.roundShort || "RO24") : String(data.gameweek.number).padStart(2, "0")}
+              <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? (data.cupDraw?.heroLabel || "Round") : "Gameweek"}</div>
+              <div className="mono" style={{ fontSize: heroValue.length > 4 ? 40 : 56, fontWeight: 700, color: "var(--card)", lineHeight: 1 }}>
+                {heroValue}
               </div>
             </div>
-            <div style={{ borderLeft: "1px solid rgba(255,255,255,0.15)", paddingLeft: 24 }}>
+            <div style={{ borderLeft: "1px solid rgba(255,255,255,0.15)", paddingLeft: 18 }}>
               <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? "Prediction deadline" : "Picks deadline"}</div>
-              <div className="mono" style={{ fontSize: 20, fontWeight: 700 }}>{heroDeadline ? fmtDeadline(heroDeadline) : "TBC"}</div>
+              <div className="mono" style={{ fontSize: tab === "cup" ? 17 : 20, fontWeight: 700 }}>{heroDeadline ? fmtDeadline(heroDeadline) : "TBC"}</div>
               {heroDeadline && daysUntil(heroDeadline) !== null && (
                 <div style={{ fontSize: 13, color: "#C7CEDA", marginTop: 2 }}>
                   {daysUntil(heroDeadline) > 0
@@ -160,31 +166,41 @@ export default function App() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Swords size={16} color="var(--amber)" />
-                    <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupDraw.round} draw</h2>
+                    <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupDraw.round} {data.cupDraw.ties.some((t) => t.result) ? "results" : "draw"}</h2>
                   </div>
-                  {data.cupDraw.playBy && (
+                  {data.cupDraw.playBy && !data.cupDraw.ties.every((t) => t.result) && (
                     <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>Ties played by {data.cupDraw.playBy}</span>
                   )}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
-                  {data.cupDraw.ties.map((t) => (
-                    <div key={t.id} style={{
-                      border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
-                      background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
-                      borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0 }}>
-                        <span style={{ lineHeight: 1.25 }}>{playerName(t.homeId)}</span>
-                        {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                  {data.cupDraw.ties.map((t) => {
+                    const sc = parseScore(t.result);
+                    const homeWon = sc && sc[0] > sc[1];
+                    const awayWon = sc && sc[1] > sc[0];
+                    const isDraw = sc && sc[0] === sc[1];
+                    const nameStyle = (won, lost) => ({ lineHeight: 1.25, fontWeight: won ? 700 : lost ? 500 : 600, color: lost ? "#8a897c" : "var(--ink)" });
+                    return (
+                      <div key={t.id} style={{
+                        border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
+                        background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
+                        borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0 }}>
+                          <span style={nameStyle(homeWon, awayWon)}>{playerName(t.homeId)}</span>
+                          {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                        </div>
+                        <div style={{ flexShrink: 0, textAlign: "center" }}>
+                          <div className="mono" style={{ fontSize: 13, color: t.result ? "var(--ink)" : "#b0aea1", fontWeight: t.result ? 700 : 400 }}>{t.result || "v"}</div>
+                          {isDraw && <div className="mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Replay</div>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+                          {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+                          <span style={{ ...nameStyle(awayWon, homeWon), textAlign: "right" }}>{playerName(t.awayId)}</span>
+                        </div>
+                        {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
                       </div>
-                      <span className="mono" style={{ fontSize: 12, color: t.result ? "var(--ink)" : "#b0aea1", fontWeight: t.result ? 700 : 400, flexShrink: 0 }}>{t.result || "v"}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-                        {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
-                        <span style={{ textAlign: "right", lineHeight: 1.25 }}>{playerName(t.awayId)}</span>
-                      </div>
-                      {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>
                   <Crown size={11} color="var(--amber)" style={{ verticalAlign: -1, marginRight: 4 }} />
@@ -192,6 +208,31 @@ export default function App() {
                 </div>
               </section>
             )}
+
+            {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.some((t) => { const s = parseScore(t.result); return s && s[0] === s[1]; }) && (
+              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--amber)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Swords size={16} color="var(--amber)" />
+                    <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Replays</h2>
+                  </div>
+                  {data.cupDraw.replayDates && (
+                    <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>To be played {data.cupDraw.replayDates}</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", marginTop: 10 }}>
+                  {data.cupDraw.ties.filter((t) => { const s = parseScore(t.result); return s && s[0] === s[1]; }).map((t) => (
+                    <div key={t.id} className="row-line" style={{ padding: "10px 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 14, fontWeight: 600, textAlign: "center", flexWrap: "wrap" }}>
+                      <span>{playerName(t.homeId)}</span>
+                      <span className="mono" style={{ color: "#b0aea1" }}>v</span>
+                      <span>{playerName(t.awayId)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12.5, color: "#6b6a5e", marginTop: 8 }}>Replay predictions coming soon</div>
+              </section>
+            )}
+
         {/* CUPS */}
         <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
