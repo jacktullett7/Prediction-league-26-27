@@ -16,6 +16,24 @@ function fmtDeadline(d) {
   return date.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+// Sort pick lists by last name (e.g. "Virgil van Dijk" sorts under "van Dijk")
+const NAME_PARTICLES = new Set(["van", "von", "de", "da", "di", "del", "der", "den", "la", "le", "mac"]);
+const SURNAME_OVERRIDES = { "Jorgen Strand Larsen": "Strand Larsen" };
+function lastNameKey(name) {
+  const clean = name.replace(/\s+x\d+$/i, "").trim();
+  if (SURNAME_OVERRIDES[clean]) return SURNAME_OVERRIDES[clean];
+  const parts = clean.split(/\s+/);
+  if (parts.length === 1) return clean;
+  for (let i = 1; i < parts.length; i++) {
+    if (NAME_PARTICLES.has(parts[i].toLowerCase())) return parts.slice(i).join(" ");
+  }
+  return parts[parts.length - 1];
+}
+function byLastName(a, b) {
+  const opts = { sensitivity: "base" };
+  return lastNameKey(a).localeCompare(lastNameKey(b), undefined, opts) || a.localeCompare(b, undefined, opts);
+}
+
 function parseScore(r) {
   const m = /^\s*(\d+)\s*[-–]\s*(\d+)\s*$/.exec(r || "");
   return m ? [Number(m[1]), Number(m[2])] : null;
@@ -484,7 +502,7 @@ export default function App() {
               <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openScorer)}'s goalscorer picks</div>
               {(data.goalscorerPicks[openScorer] || []).length ? (
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[...(data.goalscorerPicks[openScorer] || [])].sort((a, b) => a.localeCompare(b)).map((name, idx) => (
+                  {[...(data.goalscorerPicks[openScorer] || [])].sort(byLastName).map((name, idx) => (
                     <li key={idx} style={{ fontSize: 14, fontWeight: 600, color: "var(--amber)" }}>{name}</li>
                   ))}
                 </ul>
@@ -510,7 +528,7 @@ export default function App() {
               <div className="eyebrow" style={{ marginBottom: 8 }}>{playerName(openCard)}'s yellow card picks</div>
               {(data.yellowCardPicks[openCard] || []).length ? (
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[...(data.yellowCardPicks[openCard] || [])].sort((a, b) => a.localeCompare(b)).map((name, idx) => (
+                  {[...(data.yellowCardPicks[openCard] || [])].sort(byLastName).map((name, idx) => (
                     <li key={idx} style={{ fontSize: 14, fontWeight: 600, color: "#8A6D00" }}>{name}</li>
                   ))}
                 </ul>
