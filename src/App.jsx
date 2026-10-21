@@ -52,11 +52,55 @@ export default function App() {
   const [openWildcard, setOpenWildcard] = useState(null);
   const [openGraph, setOpenGraph] = useState(null);
   const [tab, setTab] = useState("league");
+  const [cupRound, setCupRound] = useState("ro24");
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
   const playerName = (id) => data.players.find((p) => p.id === id)?.name || "—";
   const totalPlayers = data.players.length;
+  const isDrawn = (r) => { const s = parseScore(r); return !!s && s[0] === s[1]; };
+  const replayTies = (data.cupDraw?.ties || []).filter((t) => isDrawn(t.result));
+  const tieWinner = (t) => {
+    const s = parseScore(t.result);
+    if (!s) return null;
+    if (s[0] !== s[1]) return s[0] > s[1] ? t.homeId : t.awayId;
+    const r = t.replay;
+    if (!r) return null;
+    const rs = parseScore(r.result);
+    if (rs && rs[0] !== rs[1]) return rs[0] > rs[1] ? t.homeId : t.awayId;
+    return r.winnerId || null;
+  };
+  const qualifiedIds = (data.cupDraw?.ties || []).map(tieWinner).filter(Boolean);
+  const renderTie = (t, result, opts = {}) => {
+    const sc = parseScore(result);
+    const winner = opts.winnerId || (sc && sc[0] !== sc[1] ? (sc[0] > sc[1] ? t.homeId : t.awayId) : null);
+    const homeWon = winner === t.homeId;
+    const awayWon = winner === t.awayId;
+    const nameStyle = (won, lost) => ({ lineHeight: 1.25, fontWeight: won ? 700 : lost ? 500 : 600, color: lost ? "#8a897c" : "var(--ink)" });
+    return (
+      <div key={t.id} style={{
+        border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
+        background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
+        borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0 }}>
+          <span style={nameStyle(homeWon, awayWon)}>{playerName(t.homeId)}</span>
+          {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+        </div>
+        <div style={{ flexShrink: 0, textAlign: "center" }}>
+          <div className="mono" style={{ fontSize: 13, color: result ? "var(--ink)" : "#b0aea1", fontWeight: result ? 700 : 400 }}>{result || "v"}</div>
+          {opts.tag && <div className="mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{opts.tag}</div>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+          {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
+          <span style={{ ...nameStyle(awayWon, homeWon), textAlign: "right" }}>{playerName(t.awayId)}</span>
+        </div>
+        {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
+        {opts.note && <div style={{ flexBasis: "100%", textAlign: "center", fontSize: 11.5, color: "var(--amber)", fontWeight: 600 }}>{opts.note}</div>}
+      </div>
+    );
+  };
+
   const heroValue = tab === "cup" ? (data.cupDraw?.heroValue || data.cupDraw?.roundShort || "RO24") : String(data.gameweek.number).padStart(2, "0");
   const heroDeadline = tab === "cup" ? data.cupDraw?.deadline : data.gameweek.deadline;
 
@@ -158,7 +202,23 @@ export default function App() {
         {/* CUP TAB */}
         {tab === "cup" && (
           <div>
-            {data.cupDraw && data.cupDraw.fixtures && data.cupDraw.fixtures.length > 0 && (
+            {/* ROUND TABS */}
+            <div style={{ display: "flex", gap: 8, marginTop: 20, overflowX: "auto" }}>
+              {[["ro24", data.cupDraw?.roundShort || "RO24"], ["replays", "Replays"], ["ro12", "RO12"]].map(([key, label]) => {
+                const active = cupRound === key;
+                return (
+                  <button key={key} onClick={() => setCupRound(key)} style={{
+                    flex: 1, padding: "10px 12px", cursor: "pointer", font: "inherit", borderRadius: 999, whiteSpace: "nowrap",
+                    border: active ? "1px solid var(--navy)" : "1px solid var(--line)",
+                    background: active ? "var(--navy)" : "#fff", color: active ? "#F6F4EC" : "var(--ink)"
+                  }}>
+                    <span className="disp" style={{ fontSize: 13.5, letterSpacing: "0.02em" }}>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {cupRound === "ro24" && data.cupDraw && data.cupDraw.fixtures && data.cupDraw.fixtures.length > 0 && (
               <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <Calendar size={16} color="var(--amber)" />
@@ -179,7 +239,7 @@ export default function App() {
               </section>
             )}
 
-            {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.length > 0 && (
+            {cupRound === "ro24" && data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.length > 0 && (
               <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -191,34 +251,7 @@ export default function App() {
                   )}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
-                  {data.cupDraw.ties.map((t) => {
-                    const sc = parseScore(t.result);
-                    const homeWon = sc && sc[0] > sc[1];
-                    const awayWon = sc && sc[1] > sc[0];
-                    const isDraw = sc && sc[0] === sc[1];
-                    const nameStyle = (won, lost) => ({ lineHeight: 1.25, fontWeight: won ? 700 : lost ? 500 : 600, color: lost ? "#8a897c" : "var(--ink)" });
-                    return (
-                      <div key={t.id} style={{
-                        border: t.spicy ? "1px solid var(--amber)" : "1px solid var(--line)",
-                        background: t.spicy ? "rgba(217,123,43,0.06)" : "transparent",
-                        borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0 }}>
-                          <span style={nameStyle(homeWon, awayWon)}>{playerName(t.homeId)}</span>
-                          {t.holder === "home" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
-                        </div>
-                        <div style={{ flexShrink: 0, textAlign: "center" }}>
-                          <div className="mono" style={{ fontSize: 13, color: t.result ? "var(--ink)" : "#b0aea1", fontWeight: t.result ? 700 : 400 }}>{t.result || "v"}</div>
-                          {isDraw && <div className="mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Replay</div>}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-                          {t.holder === "away" && <Crown size={13} color="var(--amber)" style={{ flexShrink: 0 }} />}
-                          <span style={{ ...nameStyle(awayWon, homeWon), textAlign: "right" }}>{playerName(t.awayId)}</span>
-                        </div>
-                        {t.spicy && <span style={{ fontSize: 14, flexShrink: 0 }}>👀</span>}
-                      </div>
-                    );
-                  })}
+                  {data.cupDraw.ties.map((t) => renderTie(t, t.result, { tag: isDrawn(t.result) ? "Replay" : null }))}
                 </div>
                 <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>
                   <Crown size={11} color="var(--amber)" style={{ verticalAlign: -1, marginRight: 4 }} />
@@ -227,29 +260,50 @@ export default function App() {
               </section>
             )}
 
-            {data.cupDraw && data.cupDraw.ties && data.cupDraw.ties.some((t) => { const s = parseScore(t.result); return s && s[0] === s[1]; }) && (
+            {cupRound === "replays" && (
               <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--amber)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Swords size={16} color="var(--amber)" />
                     <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Replays</h2>
                   </div>
-                  {data.cupDraw.replayDates && (
-                    <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>To be played {data.cupDraw.replayDates}</span>
+                  {data.cupDraw?.replayDates && (
+                    <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>
+                      {replayTies.every((t) => t.replay) ? `Played ${data.cupDraw.replayDates}` : `To be played ${data.cupDraw.replayDates}`}
+                    </span>
                   )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", marginTop: 10 }}>
-                  {data.cupDraw.ties.filter((t) => { const s = parseScore(t.result); return s && s[0] === s[1]; }).map((t) => (
-                    <div key={t.id} className="row-line" style={{ padding: "10px 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 14, fontWeight: 600, textAlign: "center", flexWrap: "wrap" }}>
-                      <span>{playerName(t.homeId)}</span>
-                      <span className="mono" style={{ color: "#b0aea1" }}>v</span>
-                      <span>{playerName(t.awayId)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: 12.5, color: "#6b6a5e", marginTop: 8 }}>Replay predictions coming soon</div>
+                {replayTies.length === 0 ? (
+                  <div style={{ fontSize: 13, color: "#6b6a5e", marginTop: 10 }}>No replays.</div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
+                    {replayTies.map((t) => renderTie(t, t.replay?.result, { note: t.replay?.note, winnerId: t.replay?.winnerId }))}
+                  </div>
+                )}
+                <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 10 }}>Replays from the {data.cupDraw?.round} drawn ties</div>
               </section>
             )}
+
+            {cupRound === "ro12" && (
+              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Trophy size={16} color="var(--amber)" />
+                  <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Round of 12</h2>
+                </div>
+                <div style={{ fontSize: 13, color: "#6b6a5e", margin: "6px 0 12px" }}>Draw and fixtures coming soon</div>
+                {qualifiedIds.length > 0 && (
+                  <>
+                    <div className="eyebrow" style={{ marginBottom: 8 }}>Through to the next round ({qualifiedIds.length})</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {qualifiedIds.map((id) => (
+                        <span key={id} style={{ border: "1px solid var(--line)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>{playerName(id)}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
 
         {/* CUPS */}
         <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
