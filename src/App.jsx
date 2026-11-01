@@ -52,7 +52,7 @@ export default function App() {
   const [openWildcard, setOpenWildcard] = useState(null);
   const [openGraph, setOpenGraph] = useState(null);
   const [tab, setTab] = useState("league");
-  const [cupRound, setCupRound] = useState("ro24");
+  const [cupRound, setCupRound] = useState("ro12");
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
@@ -284,26 +284,44 @@ export default function App() {
               </section>
             )}
 
-            {cupRound === "ro12" && (
-              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Trophy size={16} color="var(--amber)" />
-                  <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>Round of 12</h2>
-                </div>
-                <div style={{ fontSize: 13, color: "#6b6a5e", margin: "6px 0 12px" }}>Draw and fixtures coming soon</div>
-                {qualifiedIds.length > 0 && (
-                  <>
-                    <div className="eyebrow" style={{ marginBottom: 8 }}>Through to the next round ({qualifiedIds.length})</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {qualifiedIds.map((id) => (
-                        <span key={id} style={{ border: "1px solid var(--line)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 600 }}>{playerName(id)}</span>
+            {cupRound === "ro12" && data.cupRO12 && (
+              <>
+                {data.cupRO12.fixtures && data.cupRO12.fixtures.length > 0 && (
+                  <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <Calendar size={16} color="var(--amber)" />
+                      <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupRO12.roundShort} predictions</h2>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#6b6a5e", marginBottom: 12 }}>Cup fixtures to predict</div>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      {data.cupRO12.fixtures.map((f) => (
+                        <div key={f.id} className="row-line" style={{ padding: "10px 4px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 14, fontWeight: 600, textAlign: "center", flexWrap: "wrap" }}>
+                            <span>{f.home || "TBC"}</span>
+                            <span className="mono" style={{ color: "#b0aea1" }}>–</span>
+                            <span>{f.away || "TBC"}</span>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </>
+                  </section>
                 )}
-              </section>
+                <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Swords size={16} color="var(--amber)" />
+                      <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupRO12.round} {data.cupRO12.ties.some((t) => t.result) ? "results" : "draw"}</h2>
+                    </div>
+                    {data.cupRO12.playBy && !data.cupRO12.ties.every((t) => t.result) && (
+                      <span className="mono" style={{ fontSize: 12, color: "var(--amber)", fontWeight: 700 }}>Ties played by {data.cupRO12.playBy}</span>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
+                    {data.cupRO12.ties.map((t) => renderTie(t, t.result, { tag: isDrawn(t.result) ? "Replay" : null }))}
+                  </div>
+                </section>
+              </>
             )}
-
 
         {/* CUPS */}
         <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
