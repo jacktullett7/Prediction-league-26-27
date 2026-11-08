@@ -52,7 +52,7 @@ export default function App() {
   const [openWildcard, setOpenWildcard] = useState(null);
   const [openGraph, setOpenGraph] = useState(null);
   const [tab, setTab] = useState("league");
-  const [cupRound, setCupRound] = useState("ro12");
+  const [cupRound, setCupRound] = useState("qf");
 
   const players = [...data.players].sort((a, b) => a.name.localeCompare(b.name));
   const standings = [...data.players].sort((a, b) => b.points - a.points);
@@ -158,7 +158,7 @@ export default function App() {
             </div>
             <div style={{ borderLeft: "1px solid rgba(255,255,255,0.15)", paddingLeft: 18 }}>
               <div className="eyebrow" style={{ color: "#C7CEDA" }}>{tab === "cup" ? "Prediction deadline" : "Picks deadline"}</div>
-              <div className="mono" style={{ fontSize: tab === "cup" ? 17 : 20, fontWeight: 700 }}>{heroDeadline ? fmtDeadline(heroDeadline) : "TBC"}</div>
+              <div className="mono" style={{ fontSize: tab === "cup" ? 17 : 20, fontWeight: 700 }}>{heroDeadline ? fmtDeadline(heroDeadline) : (tab === "cup" ? "TBA" : "TBC")}</div>
               {heroDeadline && daysUntil(heroDeadline) !== null && (
                 <div style={{ fontSize: 13, color: "#C7CEDA", marginTop: 2 }}>
                   {daysUntil(heroDeadline) > 0
@@ -204,7 +204,7 @@ export default function App() {
           <div>
             {/* ROUND TABS */}
             <div style={{ display: "flex", gap: 8, marginTop: 20, overflowX: "auto" }}>
-              {[["ro24", data.cupDraw?.roundShort || "RO24"], ["replays", "Replays"], ["ro12", "RO12"]].map(([key, label]) => {
+              {[["ro24", data.cupDraw?.roundShort || "RO24"], ["replays", "Replays"], ["ro12", "RO12"], ["qf", "QF"]].map(([key, label]) => {
                 const active = cupRound === key;
                 return (
                   <button key={key} onClick={() => setCupRound(key)} style={{
@@ -317,13 +317,41 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 14 }}>
-                    {data.cupRO12.ties.map((t) => renderTie(t, t.result, { tag: isDrawn(t.result) ? "Replay" : null }))}
+                    {data.cupRO12.ties.map((t) => {
+                      const ll = (data.cupQF?.luckyLoserIds || []).find((id) => id === t.homeId || id === t.awayId);
+                      return renderTie(t, t.result, { tag: isDrawn(t.result) ? "Replay" : null, note: ll ? `${playerName(ll)} goes through as a best loser` : null });
+                    })}
                   </div>
                 </section>
               </>
             )}
 
-        {/* CUPS */}
+        {cupRound === "qf" && data.cupQF && (
+              <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--amber)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Trophy size={16} color="var(--amber)" />
+                  <h2 className="disp" style={{ fontSize: 15, margin: 0 }}>{data.cupQF.round}</h2>
+                </div>
+                <div style={{ fontSize: 13, color: "#6b6a5e", margin: "6px 0 14px" }}>Predictions due TBA · Quarter finals draw coming soon</div>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>The last 8 ({data.cupQF.playerIds.length})</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+                  {data.cupQF.playerIds.map((id) => {
+                    const lucky = (data.cupQF.luckyLoserIds || []).includes(id);
+                    return (
+                      <div key={id} style={{ border: lucky ? "1px solid var(--amber)" : "1px solid var(--line)", background: lucky ? "rgba(217,123,43,0.06)" : "transparent", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, fontWeight: 600, lineHeight: 1.25 }}>
+                        {playerName(id)}
+                        {lucky && <div className="mono" style={{ fontSize: 9.5, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>Best loser</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11.5, color: "#8a897c", marginTop: 12 }}>
+                  The two highest-scoring losers from the Round of 12 also go through.
+                </div>
+              </section>
+            )}
+
+            {/* CUPS */}
         <section style={{ marginTop: 20, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: "16px 18px" }} className="fade-in">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <Calendar size={16} color="var(--amber)" />
