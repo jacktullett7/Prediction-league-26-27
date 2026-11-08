@@ -75,7 +75,7 @@ const data = {
     { id: "f10", home: "", away: "" },
   ],
   players: [
-    { id: "p20", name: "Davo Witts", points: 114 },
+    { id: "p20", name: "Davo Witts", points: 117 },
     { id: "p13", name: "Luke Witts", points: 103 },
     { id: "p16", name: "Sam Wilding", points: 99 },
     { id: "p7", name: "Josh Palmer", points: 97 },
